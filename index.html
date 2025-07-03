@@ -3,8 +3,20 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Sistema de Facturación</title>
+  <title>Sistema de Facturación Jennifer</title>
   <link rel="stylesheet" href="./css/styles.css" />
+  <meta name="theme-color" content="#1976d2" />
+  <link rel="manifest" href="./manifest.json" />
+  <link rel="icon" href="https://cdn-icons-png.flaticon.com/512/879/879859.png" />
+  <script>
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+          .then(reg => console.log('SW registrado:', reg.scope))
+          .catch(err => console.error('Error SW:', err));
+      });
+    }
+  </script>
 </head>
 <body>
   <div class="contenedor-principal">
@@ -23,9 +35,9 @@
 
     <!-- Panel dinámico (contenido que aparece al lado del menú) -->
     <div class="contenedor-panel-dinamico">
-        <div id="panel-dinamico" class="panel-dinamico">
-        <p>Selecciona una opción del menú :3.</p>
-        </div>
+      <div id="panel-dinamico" class="panel-dinamico">
+        <p>Selecciona una opción del menú </p>
+      </div>
     </div>
 
   </div>
@@ -33,6 +45,6 @@
   <!-- Scripts -->
   <script type="module" src="./javascript/navegacion.js"></script>
   <script type="module" src="./javascript/main/clientesMain.js"></script>
-    <script type="module" src="./javascript/main/productosMain.js"></script>  
+  <script type="module" src="./javascript/main/productosMain.js"></script>
 </body>
 </html>
