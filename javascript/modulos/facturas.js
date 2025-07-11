@@ -1,45 +1,36 @@
-// Obtener todas las facturas desde localStorage
-function obtenerTodasLasFacturas() {
-  return JSON.parse(localStorage.getItem("facturas") || "[]");
-}
 
+// Obtener todas las facturas
+function obtenerTodasLasFacturas() {
+const data = localStorage.getItem("facturas");
+return data ? JSON.parse(data) : [];
+}
 // Guardar facturas en localStorage
 function guardarFacturas(facturas) {
   localStorage.setItem("facturas", JSON.stringify(facturas));
 }
 
 // Crear una nueva factura
-function agregarFactura(clienteId, productos) {
+function agregarFactura(cliente, productos, totales) {
   let facturas = obtenerTodasLasFacturas();
 
-  // Calcular ID nuevo
-  let maxId = facturas.reduce((max, f) => Math.max(max, f.id), 0);
-  let nuevoId = maxId + 1;
+  // Calcular nuevo ID
+  const maxId = facturas.reduce((max, f) => Math.max(max, f.id || 0), 0);
+  const nuevoId = maxId + 1;
 
-  // Calcular subtotal por producto y total general
-  let total = 0;
-  const productosProcesados = productos.map(p => {
-    const subtotal = p.cantidad * p.precio;
-    total += subtotal;
-    return {
-      idProducto: p.idProducto,
-      cantidad: p.cantidad,
-      subtotal: subtotal
-    };
-  });
-
-  const nuevaFactura = {
+  // Construir estructura de factura completa
+  const factura = {
     id: nuevoId,
-    clienteId: clienteId,
-    productos: productosProcesados,
-    total: total,
-    fecha: new Date().toISOString().split("T")[0] // YYYY-MM-DD
+    cliente,        // { id, nombre, cedula }
+    productos,      // [{ idProducto, cantidad, precio }]
+    totales,        // { subtotal, iva, total }
+    fecha: new Date().toISOString().split("T")[0]
   };
 
-  facturas.push(nuevaFactura);
+  facturas.push(factura);
   guardarFacturas(facturas);
+
   console.log("Factura creada con ID:", nuevoId);
-  return nuevaFactura;
+  return factura;
 }
 
 // Obtener una factura por ID

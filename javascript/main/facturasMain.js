@@ -1,6 +1,5 @@
-// facturasMain.js
 import { obtenerTodosLosClientes } from "../modulos/clientes.js";
-import { agregarFactura } from "../modulos/facturas.js";
+import { agregarFactura, obtenerTodasLasFacturas } from "../modulos/facturas.js";
 
 function inicializarModuloFacturas() {
   const productosContainer = document.getElementById("productosContainer");
@@ -8,13 +7,11 @@ function inicializarModuloFacturas() {
   const btnEliminarFila = document.getElementById("btnEliminarFila");
   const formFactura = document.getElementById("formFactura");
   const resultadoFactura = document.getElementById("resultadoFactura");
+  const btnVerFacturas = document.getElementById("btnVerFacturas");
+  const historialContainer = document.getElementById("historialFacturas");
 
-  // Reemplazar input de cliente por un <select>
-  const inputCliente = document.getElementById("clienteFactura");
-  const selectCliente = document.createElement("select");
-  selectCliente.id = "clienteFactura";
-  selectCliente.required = true;
-
+  // Obtener y rellenar opciones del <select> cliente
+  const selectCliente = document.getElementById("clienteFactura");
   const clientes = obtenerTodosLosClientes();
 
   const optionDefault = document.createElement("option");
@@ -29,12 +26,9 @@ function inicializarModuloFacturas() {
     selectCliente.appendChild(option);
   });
 
-  inputCliente.replaceWith(selectCliente);
-
   // Estado inicial de botones
   actualizarEstadoBotones();
 
-  // Agregar fila
   btnAgregarFila.addEventListener("click", () => {
     const grupos = productosContainer.querySelectorAll(".grupo-producto");
     if (grupos.length < 5) {
@@ -43,14 +37,13 @@ function inicializarModuloFacturas() {
       nuevaFila.innerHTML = `
         <input type="text" class="producto" placeholder="Producto" required />
         <input type="number" class="cantidad" placeholder="Cantidad" required />
-        <input type="number" class="precio" placeholder="Precio Unitario" required />
+        <input type="number" class="precio" placeholder="Precio Unitario (con IVA)" required />
       `;
       productosContainer.appendChild(nuevaFila);
     }
     actualizarEstadoBotones();
   });
 
-  // Eliminar fila
   btnEliminarFila.addEventListener("click", () => {
     const grupos = productosContainer.querySelectorAll(".grupo-producto");
     if (grupos.length > 1) {
@@ -59,18 +52,16 @@ function inicializarModuloFacturas() {
     actualizarEstadoBotones();
   });
 
-  // Habilitar/deshabilitar botones
   function actualizarEstadoBotones() {
     const totalFilas = productosContainer.querySelectorAll(".grupo-producto").length;
     btnEliminarFila.disabled = totalFilas <= 1;
     btnAgregarFila.disabled = totalFilas >= 5;
   }
 
-  // Generar factura
   formFactura.addEventListener("submit", function (e) {
     e.preventDefault();
 
-    const clienteId = parseInt(document.getElementById("clienteFactura").value);
+    const clienteId = parseInt(selectCliente.value);
     const filas = productosContainer.querySelectorAll(".grupo-producto");
 
     if (!clienteId) {
@@ -81,44 +72,64 @@ function inicializarModuloFacturas() {
     const productos = [];
     let filasHTML = "";
     let subtotal = 0;
+    let iva = 0;
+    let total = 0;
 
     filas.forEach(fila => {
       const nombre = fila.querySelector(".producto").value;
       const cantidad = parseInt(fila.querySelector(".cantidad").value);
-      const precio = parseFloat(fila.querySelector(".precio").value);
-      const totalFila = cantidad * precio;
-      subtotal += totalFila;
+      const precioFinal = parseFloat(fila.querySelector(".precio").value); // Precio con IVA incluido
 
-      productos.push({ idProducto: nombre, cantidad, precio });
+      const precioSinIVA = precioFinal / 1.12;
+      const ivaUnitario = precioFinal - precioSinIVA;
+
+      const subtotalFila = precioSinIVA * cantidad;
+      const ivaFila = ivaUnitario * cantidad;
+      const totalFila = precioFinal * cantidad;
+
+      subtotal += subtotalFila;
+      iva += ivaFila;
+      total += totalFila;
+
+      productos.push({ idProducto: nombre, cantidad, precio: precioFinal });
 
       filasHTML += `
         <tr>
           <td>${nombre}</td>
           <td>${cantidad}</td>
-          <td>$${precio.toFixed(2)}</td>
-          <td>$${totalFila.toFixed(2)}</td>
+          <td>$${precioFinal.toFixed(2)}</td>
+          <td>$${subtotalFila.toFixed(2)}</td>
         </tr>
       `;
     });
 
-    const iva = subtotal * 0.12;
-    const total = subtotal + iva;
-
-    const factura = agregarFactura(clienteId, productos); // ✅ Se guarda en localStorage
     const clienteSeleccionado = clientes.find(c => c.id === clienteId);
+    const cliente = {
+      id: clienteId,
+      nombre: clienteSeleccionado.nombre,
+      cedula: clienteSeleccionado.cedula
+    };
+
+    const totales = {
+      subtotal: subtotal.toFixed(2),
+      iva: iva.toFixed(2),
+      total: total.toFixed(2)
+    };
+
+    const factura = agregarFactura(cliente, productos, totales);
 
     resultadoFactura.innerHTML = `
       <div class="factura">
         <h4>Factura</h4>
-        <p><strong>Cliente:</strong> ${clienteSeleccionado.nombre} (${clienteSeleccionado.cedula})</p>
+        <p><strong>Cliente:</strong> ${cliente.nombre} (${cliente.cedula})</p>
         <p><strong>Fecha:</strong> ${factura.fecha}</p>
         <table class="tabla-factura">
           <thead>
             <tr>
               <th>Producto</th>
               <th>Cantidad</th>
-              <th>Precio Unitario</th>
-              <th>Subtotal</th>
+              <th>Precio Final</th>
+              <th>Subtotal sin IVA</th>
             </tr>
           </thead>
           <tbody>
@@ -137,6 +148,38 @@ function inicializarModuloFacturas() {
         </table>
       </div>
     `;
+  });
+
+  // Mostrar historial de facturas guardadas
+  btnVerFacturas.addEventListener("click", () => {
+    const facturas = obtenerTodasLasFacturas();
+
+    if (facturas.length === 0) {
+      historialContainer.innerHTML = "<p>No hay facturas guardadas.</p>";
+      return;
+    }
+
+    let tablaHTML = `
+      <table class="tabla-historial">
+        <thead>
+          <tr><th>ID</th><th>Cliente</th><th>Fecha</th><th>Total</th></tr>
+        </thead>
+        <tbody>
+    `;
+
+    facturas.forEach(f => {
+      tablaHTML += `
+        <tr>
+          <td>${f.id}</td>
+          <td>${f.cliente.nombre} (${f.cliente.cedula})</td>
+          <td>${f.fecha}</td>
+          <td>$${f.totales.total}</td>
+        </tr>
+      `;
+    });
+
+    tablaHTML += "</tbody></table>";
+    historialContainer.innerHTML = tablaHTML;
   });
 }
 

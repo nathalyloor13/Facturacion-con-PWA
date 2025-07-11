@@ -11,16 +11,17 @@
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
-        navigator.serviceWorker.register('/sw.js')
-          .then(reg => console.log('SW registrado:', reg.scope))
-          .catch(err => console.error('Error SW:', err));
+navigator.serviceWorker
+  .register('./sw.js', { scope: './' })
+  .then(reg => console.log('SW registrado:', reg.scope))
+  .catch(err => console.error('Error SW:', err));
       });
     }
   </script>
 </head>
 <body>
   <div class="contenedor-principal">
-    
+
     <!-- Menú lateral -->
     <aside class="contenedor-aside">
       <h2 class="titulo-menu">Menú</h2>
@@ -33,10 +34,10 @@
       </nav>
     </aside>
 
-    <!-- Panel dinámico (contenido que aparece al lado del menú) -->
+    <!-- Panel dinámico -->
     <div class="contenedor-panel-dinamico">
       <div id="panel-dinamico" class="panel-dinamico">
-        <p>Selecciona una opción del menú </p>
+        <p>Selecciona una opción del menú</p>
       </div>
     </div>
 
@@ -46,5 +47,6 @@
   <script type="module" src="./javascript/navegacion.js"></script>
   <script type="module" src="./javascript/main/clientesMain.js"></script>
   <script type="module" src="./javascript/main/productosMain.js"></script>
+  <script type="module" src="./javascript/main/facturasMain.js"></script>
 </body>
 </html>
